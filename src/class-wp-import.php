@@ -20,6 +20,7 @@ class WP_Import extends WP_Importer {
 	var $posts      = array();
 	var $terms      = array();
 	var $categories = array();
+	var $objects = array();
 	var $tags       = array();
 	var $base_url   = '';
 
@@ -86,6 +87,7 @@ class WP_Import extends WP_Importer {
 		$this->process_categories();
 		$this->process_tags();
 		$this->process_terms();
+		$this->process_objects();
 		$this->process_posts();
 		wp_suspend_cache_invalidation( false );
 
@@ -125,6 +127,7 @@ class WP_Import extends WP_Importer {
 		$this->terms      = $import_data['terms'];
 		$this->categories = $import_data['categories'];
 		$this->tags       = $import_data['tags'];
+		$this->objects    = $import_data['objects'];
 		$this->base_url   = esc_url( $import_data['base_url'] );
 
 		wp_defer_term_counting( true );
@@ -617,6 +620,47 @@ class WP_Import extends WP_Importer {
 	}
 
 	/**
+	 * Process incoming objects
+	 */
+	function process_objects() {
+		$objects = apply_filters( 'wp_import_objects', $this->objects );
+
+		$this->objects = array();
+		foreach ( $objects as $obj ) {
+			$this->objects[ $obj['object_id'] ] = $obj;
+		}
+	}
+
+	/**
+	 * Get the replacement text for a single object placeholder
+	 */
+	function replace_object_placeholder( $match ) {
+		$placeholder = $match[0];
+		$attributes = json_decode( $match[1], true );
+		if ( ! isset( $attributes['id'] ) ) {
+			return $placeholder;
+		}
+
+		$id = $attributes['id'];
+		$data = null;
+		$type = null;
+		if ( isset( $this->objects[ $id ] ) ) {
+			$data = $this->objects[ $id ]['data'];
+			$type = $this->objects[ $id ]['type'];
+		}
+		$replacement = apply_filters( 'wp_import_object_placeholder', $placeholder, $type, $data );
+
+		return $replacement;
+	}
+
+	/**
+	 * Replace object placeholders in post_content
+	 */
+	function replace_objects_in_post_content( $post_content ) {
+		return preg_replace_callback( '~<!-- wp:core-import/plugin-placeholder\s+({[^}]+})\s+/-->~', array( $this, 'replace_object_placeholder' ), $post_content );
+	}
+
+	/**
 	 * Create new posts based on import information
 	 *
 	 * Posts marked as having a parent which doesn't exist will become top level items.
@@ -717,6 +761,8 @@ class WP_Import extends WP_Importer {
 					'post_type'      => $post['post_type'],
 					'post_password'  => $post['post_password'],
 				);
+
+				$postdata['post_content'] = $this->replace_objects_in_post_content( $postdata['post_content'] );
 
 				$original_post_id = $post['post_id'];
 				$postdata         = apply_filters( 'wp_import_post_data_processed', $postdata, $post );
@@ -1366,7 +1412,7 @@ class WP_Import extends WP_Importer {
 	 * @return bool True if downloading attachments is allowed
 	 */
 	function allow_fetch_attachments() {
-		return apply_filters( 'import_allow_fetch_attachments', true );
+		return apply_filters( 'import_allow_fetch_attachments', false );
 	}
 
 	/**
