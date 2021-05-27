@@ -33,21 +33,6 @@ if ( ! class_exists( 'WP_Importer' ) ) {
 	}
 }
 
-// This filter would be registed by a contact form plugin:
-add_filter( 'wp_import_object_placeholder', function( $placeholder, $data, $type ) {
-	if ( 'http://wordpress.org/export/objects/contact-form/1.0/' !== $type ) {
-		return $placeholder;
-	}
-	// Create a contact form from the data:
-	var_dump( $data );
-	$contact_form_id = 201;
-
-	return '<!-- wp:contact-form-7/contact-form-selector {"id":' . $contact_form_id . ',"title":"Contact"} -->
-<div class="wp-block-contact-form-7-contact-form-selector">[contact-form-7 id="' . $contact_form_id . '" title="Contact"]</div>
-<!-- /wp:contact-form-7/contact-form-selector -->';
-
-}, 10, 3 );
-
 /** Functions missing in older WordPress versions. */
 require_once dirname( __FILE__ ) . '/compat.php';
 

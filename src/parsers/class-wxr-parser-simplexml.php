@@ -149,13 +149,14 @@ class WXR_Parser_SimpleXML {
 		foreach ( $xml->xpath( '/rss/channel/wp:object' ) as $object_arr ) {
 			$obj_namespaces = $object_arr->getNamespaces( true );
 
+			$data = $this->xml2array( $object_arr );
 			$object = array(
 				'object_id' => (int) $object_arr['id'],
 				'type'      => (string) $obj_namespaces[''],
-				'data'      => $this->xml2array( $object_arr ),
+				'data'      => $data['object'],
 			);
 
-			$objects[] = $object;
+			$objects[ (int) $object_arr['id'] ] = $object;
 		}
 
 		// grab posts
@@ -254,10 +255,29 @@ class WXR_Parser_SimpleXML {
 	}
 
 	function xml2array( $xml ) {
-
-		$tags = array();
+		$children = array();
 		foreach ( $xml->children() as $child ) {
-			$tags = array_merge( $this->xml2array( $child ), $tags );
+			$children = array_merge( $children, array( $this->xml2array( $child ) ) );
+		}
+
+		if ( ! empty( $children ) ) {
+			$kids = array();
+			foreach ( $children as $child ) {
+				$tag = key( $child );
+				if ( ! isset( $kids[ $tag ] ) ) {
+					$kids[ $tag ] = array();
+				}
+				$kids[ $tag ][] = $child[ $tag ];
+			}
+
+			$children = array();
+			foreach ( $kids as $tag => $child ) {
+				if ( 1 === count( $child ) ) {
+					$children[$tag] = $child[0];
+				} else {
+					$children[$tag . 's'] = $child;
+				}
+			}
 		}
 
 		$attributes = array();
@@ -269,7 +289,7 @@ class WXR_Parser_SimpleXML {
 		$text = (string) $xml;
 		if ( trim( $text ) ) $textcontent[':text'] = $text;
 
-		$values = $attributes || $tags || ! empty( $textcontent ) ? array_merge($attributes, $tags, $textcontent) : $text;
+		$values = $attributes || $children || ! empty( $textcontent ) ? array_merge( $attributes, $children, $textcontent ) : $text;
 		return array(
 			$xml->getName() => $values,
 		);
