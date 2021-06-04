@@ -16,6 +16,7 @@ class WXR_Parser_SimpleXML {
 		$categories = array();
 		$tags       = array();
 		$terms      = array();
+		$objects    = array();
 
 		$internal_errors = libxml_use_internal_errors( true );
 
@@ -144,6 +145,16 @@ class WXR_Parser_SimpleXML {
 
 			$terms[] = $term;
 		}
+		foreach ( $xml->xpath( '/rss/channel/wp:object' ) as $object_arr ) {
+
+			$object = array(
+				'object_id' => (int) $object_arr->attributes()->id,
+				'type'      => (string) $object_arr->attributes()->type,
+				'data'      => json_decode( (string) $object_arr, true ),
+			);
+
+			$objects[ (int) $object_arr['id'] ] = $object;
+		}
 
 		// grab posts
 		foreach ( $xml->channel->item as $item ) {
@@ -233,6 +244,7 @@ class WXR_Parser_SimpleXML {
 			'categories'    => $categories,
 			'tags'          => $tags,
 			'terms'         => $terms,
+			'objects'       => $objects,
 			'base_url'      => $base_url,
 			'base_blog_url' => $base_blog_url,
 			'version'       => $wxr_version,
