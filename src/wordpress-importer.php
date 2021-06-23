@@ -48,6 +48,9 @@ require_once dirname( __FILE__ ) . '/parsers/class-wxr-parser-xml.php';
 /** WXR_Parser_Regex class */
 require_once dirname( __FILE__ ) . '/parsers/class-wxr-parser-regex.php';
 
+/** WXZ_Parser class */
+require_once dirname( __FILE__ ) . '/parsers/class-wxz-parser.php';
+
 /** WP_Import class */
 require_once dirname( __FILE__ ) . '/class-wp-import.php';
 

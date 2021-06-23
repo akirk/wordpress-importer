@@ -1298,7 +1298,12 @@ class WP_Import extends WP_Importer {
 	 * @return array Information gathered from the WXR file
 	 */
 	function parse( $file ) {
-		$parser = new WXR_Parser();
+		if ( 'wxz' === strtolower( pathinfo( $file, PATHINFO_EXTENSION ) ) ) {
+			$parser = new WXZ_Parser();
+		} else {
+			// Legacy WXR parser
+			$parser = new WXR_Parser();
+		}
 		return $parser->parse( $file );
 	}
 
