@@ -15,6 +15,20 @@ class WXZ_Parser {
 		$archive = new PclZip( $file );
 		$archive_files = $archive->extract( PCLZIP_OPT_EXTRACT_AS_STRING );
 
+		$mimetype_exists = false;
+		foreach ( $archive_files as $file ) {
+			if ( 'mimetype' === $file['filename'] ) {
+				if ( 'application/vnd.wordpress.export+zip' === trim( $file['content'] ) ) {
+					$mimetype_exists = true;
+				}
+				break;
+			}
+		}
+
+		if ( ! $mimetype_exists ) {
+			return new WP_Error( 'invalid-file', 'Invalid WXZ fiel, mimetype declaration missing.' );
+		}
+
 		foreach ( $archive_files as $file ) {
 			if ( $file['folder'] ) {
 				continue;
